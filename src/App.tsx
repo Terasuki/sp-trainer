@@ -36,37 +36,61 @@ function App() {
 
   const counts = decodeState(currentRow.state)
 
+  const sortedIndices = Array.from({ length: 9 })
+    .map((_, i) => i)
+    .sort((a, b) => {
+      const valA = currentRow[`action_${a}` as keyof QRow]
+      const valB = currentRow[`action_${b}` as keyof QRow]
+      return valB - valA
+    })
+
   return (
-    <div style={{ padding: '20px', fontFamily: 'system-ui' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        padding: '40px 20px',
+        fontFamily: 'system-ui',
+        textAlign: 'center',
+        boxSizing: 'border-box',
+      }}
+    >
       <button
         onClick={pickRandomValidHand}
         style={{
-          padding: '10px 20px',
+          padding: '12px 24px',
           backgroundColor: '#007bff',
           color: 'white',
           border: 'none',
-          borderRadius: '4px',
+          borderRadius: '6px',
           cursor: 'pointer',
-          marginBottom: '20px',
+          marginBottom: '30px',
+          fontSize: '16px',
+          fontWeight: 'bold',
         }}
       >
         New Hand
       </button>
 
       <div style={{ marginBottom: '20px', fontSize: '14px', color: '#666' }}>
-        <strong>State ID:</strong> {currentRow.state} |<strong> Counts:</strong>{' '}
+        <strong>State ID:</strong> {currentRow.state} | <strong>Counts:</strong>{' '}
         [{counts.join(', ')}]
       </div>
 
       <div
         style={{
           display: 'flex',
-          gap: '4px',
+          justifyContent: 'center',
+          gap: '8px',
           padding: '30px',
           background: '#2c3e50',
           borderRadius: '12px',
           minHeight: '120px',
-          alignItems: 'flex-start',
+          maxWidth: '600px',
+          width: '100%',
+          alignItems: 'center',
+          marginBottom: '40px',
         }}
       >
         {counts.flatMap((count, i) =>
@@ -76,29 +100,34 @@ function App() {
         )}
       </div>
 
-      <div style={{ marginTop: '20px' }}>
-        <table
-          style={{
-            width: '100%',
-            borderCollapse: 'collapse',
-            textAlign: 'left',
-          }}
-        >
+      <div>
+        <table>
           <thead>
             <tr>
-              <th style={{ borderBottom: '1px solid #ddd' }}>Action</th>
-              <th style={{ borderBottom: '1px solid #ddd' }}>
-                Expected number of turns
+              <th style={{ borderBottom: '2px solid #eee', padding: '10px' }}>
+                Discard Tile
+              </th>
+              <th style={{ borderBottom: '2px solid #eee', padding: '10px' }}>
+                Expected Turns
               </th>
             </tr>
           </thead>
           <tbody>
-            {Array.from({ length: 9 }).map((_, i) => (
-              <tr key={i}>
-                <td style={{ padding: '4px 0' }}>Tile {i + 1}</td>
-                <td>{10 - currentRow[`action_${i}`]}</td>
-              </tr>
-            ))}
+            {sortedIndices.map((i) => {
+              const actionValue = currentRow[`action_${i}` as keyof QRow]
+              if (actionValue < -50) return null
+
+              return (
+                <tr key={i}>
+                  <td>
+                    <Tile id={`${i + 1}m`} size="45px" />
+                  </td>
+                  <td style={{ fontWeight: 'bold' }}>
+                    {(10 - actionValue).toFixed(2)}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
