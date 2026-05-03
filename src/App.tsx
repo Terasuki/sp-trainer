@@ -2,12 +2,19 @@ import { useState, useEffect } from 'react'
 import Tile from './components/Tiles'
 import type { QRow } from './types'
 
+const DELTA = 0.01
+
 function App() {
   const [qTable, setQTable] = useState<QRow[]>([])
   const [currentRow, setCurrentRow] = useState<QRow | null>(null)
   const [loading, setLoading] = useState(true)
   const [showResults, setShowResults] = useState(false)
   const [selectedTile, setSelectedTile] = useState<number | null>(null)
+  const [stats, setStats] = useState({
+    correct: 0,
+    incorrect: 0,
+    totalEvLoss: 0,
+  })
 
   useEffect(() => {
     fetch('q_values.json')
@@ -36,6 +43,29 @@ function App() {
     setSelectedTile(null)
   }
 
+  const handleTileClick = (index: number) => {
+    if (showResults || !currentRow) return
+
+    const counts = decodeState(currentRow.state)
+    let maxActionValue = -Infinity
+    counts.forEach((count, i) => {
+      if (count > 0) {
+        const val = currentRow[`action_${i}` as keyof QRow] as number
+        if (val > maxActionValue) maxActionValue = val
+      }
+    })
+    const selectedValue = currentRow[`action_${index}` as keyof QRow] as number
+    const loss = maxActionValue - selectedValue
+    setStats((prev) => ({
+      correct: loss <= DELTA ? prev.correct + 1 : prev.correct,
+      incorrect: loss > DELTA ? prev.incorrect + 1 : prev.incorrect,
+      totalEvLoss: prev.totalEvLoss + loss,
+    }))
+
+    setSelectedTile(index)
+    setShowResults(true)
+  }
+
   if (loading || !currentRow) return <div>Loading...</div>
 
   const counts = decodeState(currentRow.state)
@@ -60,6 +90,36 @@ function App() {
         boxSizing: 'border-box',
       }}
     >
+      <div
+        style={{
+          marginBottom: '20px',
+          padding: '15px',
+          backgroundColor: '#f8f9fa',
+          borderRadius: '8px',
+          border: '1px solid #ddd',
+          minWidth: '300px',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '20px',
+            fontSize: '18px',
+          }}
+        >
+          <span style={{ color: '#28a745' }}>
+            <strong>Correct:</strong> {stats.correct}
+          </span>
+          <span style={{ color: '#dc3545' }}>
+            <strong>Incorrect:</strong> {stats.incorrect}
+          </span>
+        </div>
+        <div style={{ marginTop: '8px', color: '#6c757d', fontSize: '14px' }}>
+          <strong>Total EV Loss:</strong> {stats.totalEvLoss.toFixed(3)} turns
+        </div>
+      </div>
+
       <button
         onClick={pickRandomValidHand}
         style={{
@@ -103,63 +163,58 @@ function App() {
               key={`${i}-${copyIndex}`}
               id={`${i + 1}m`}
               size="60px"
-              onClick={() => {
-                setSelectedTile(i)
-                setShowResults(true)
-              }}
+              onClick={() => handleTileClick(i)}
             />
           ))
         )}
       </div>
 
-      {showResults ? (
-        <div>
-          <table>
-            <thead>
-              <tr>
-                <th style={{ borderBottom: '2px solid #eee', padding: '10px' }}>
-                  Discard Tile
-                </th>
-                <th style={{ borderBottom: '2px solid #eee', padding: '10px' }}>
-                  Expected Turns
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedIndices.map((i) => {
-                const actionValue = currentRow[`action_${i}` as keyof QRow]
-                if (actionValue < -50) return null
+      {showResults && selectedTile !== null ? (
+        <table style={{ margin: '0 auto', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th style={{ borderBottom: '2px solid #eee', padding: '10px' }}>
+                Discard Tile
+              </th>
+              <th style={{ borderBottom: '2px solid #eee', padding: '10px' }}>
+                Expected Turns
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedIndices.map((i) => {
+              const actionValue = currentRow[`action_${i}` as keyof QRow]
+              if (actionValue < -50 || counts[i] === 0) return null
 
-                const isSelected = i === selectedTile
+              const isSelected = i === selectedTile
 
-                return (
-                  <tr
-                    key={i}
+              return (
+                <tr
+                  key={i}
+                  style={{
+                    backgroundColor: isSelected ? '#9aa8c6' : 'transparent',
+                    transition: 'background-color 0.3s ease',
+                  }}
+                >
+                  <td
+                    style={{ padding: '8px', borderBottom: '1px solid #eee' }}
+                  >
+                    <Tile id={`${i + 1}m`} size="45px" />
+                  </td>
+                  <td
                     style={{
-                      backgroundColor: isSelected ? '#9aa8c6' : 'transparent',
-                      transition: 'background-color 0.3s ease',
+                      fontWeight: 'bold',
+                      padding: '8px',
+                      borderBottom: '1px solid #eee',
                     }}
                   >
-                    <td
-                      style={{ padding: '8px', borderBottom: '1px solid #eee' }}
-                    >
-                      <Tile id={`${i + 1}m`} size="45px" />
-                    </td>
-                    <td
-                      style={{
-                        fontWeight: 'bold',
-                        padding: '8px',
-                        borderBottom: '1px solid #eee',
-                      }}
-                    >
-                      {(10 - actionValue).toFixed(2)}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+                    {(10 - actionValue).toFixed(2)}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       ) : (
         <div style={{ color: '#999', fontStyle: 'italic' }}>Your turn!</div>
       )}
