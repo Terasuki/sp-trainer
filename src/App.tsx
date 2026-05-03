@@ -6,6 +6,7 @@ function App() {
   const [qTable, setQTable] = useState<QRow[]>([])
   const [currentRow, setCurrentRow] = useState<QRow | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showResults, setShowResults] = useState(false)
 
   useEffect(() => {
     fetch('q_values.json')
@@ -30,6 +31,7 @@ function App() {
   const pickRandomValidHand = () => {
     const randomIndex = Math.floor(Math.random() * qTable.length)
     setCurrentRow(qTable[randomIndex])
+    setShowResults(false)
   }
 
   if (loading || !currentRow) return <div>Loading...</div>
@@ -95,42 +97,51 @@ function App() {
       >
         {counts.flatMap((count, i) =>
           Array.from({ length: count }).map((_, copyIndex) => (
-            <Tile key={`${i}-${copyIndex}`} id={`${i + 1}m`} size="60px" />
+            <Tile
+              key={`${i}-${copyIndex}`}
+              id={`${i + 1}m`}
+              size="60px"
+              onClick={() => setShowResults(true)}
+            />
           ))
         )}
       </div>
 
-      <div>
-        <table>
-          <thead>
-            <tr>
-              <th style={{ borderBottom: '2px solid #eee', padding: '10px' }}>
-                Discard Tile
-              </th>
-              <th style={{ borderBottom: '2px solid #eee', padding: '10px' }}>
-                Expected Turns
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedIndices.map((i) => {
-              const actionValue = currentRow[`action_${i}` as keyof QRow]
-              if (actionValue < -50) return null
+      {showResults ? (
+        <div>
+          <table>
+            <thead>
+              <tr>
+                <th style={{ borderBottom: '2px solid #eee', padding: '10px' }}>
+                  Discard Tile
+                </th>
+                <th style={{ borderBottom: '2px solid #eee', padding: '10px' }}>
+                  Expected Turns
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedIndices.map((i) => {
+                const actionValue = currentRow[`action_${i}` as keyof QRow]
+                if (actionValue < -50) return null
 
-              return (
-                <tr key={i}>
-                  <td>
-                    <Tile id={`${i + 1}m`} size="45px" />
-                  </td>
-                  <td style={{ fontWeight: 'bold' }}>
-                    {(10 - actionValue).toFixed(2)}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+                return (
+                  <tr key={i}>
+                    <td>
+                      <Tile id={`${i + 1}m`} size="45px" />
+                    </td>
+                    <td style={{ fontWeight: 'bold' }}>
+                      {(10 - actionValue).toFixed(2)}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div style={{ color: '#999', fontStyle: 'italic' }}>Your turn!</div>
+      )}
     </div>
   )
 }
