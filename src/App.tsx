@@ -7,6 +7,7 @@ function App() {
   const [currentRow, setCurrentRow] = useState<QRow | null>(null)
   const [loading, setLoading] = useState(true)
   const [showResults, setShowResults] = useState(false)
+  const [selectedTile, setSelectedTile] = useState<number | null>(null)
 
   useEffect(() => {
     fetch('q_values.json')
@@ -32,6 +33,7 @@ function App() {
     const randomIndex = Math.floor(Math.random() * qTable.length)
     setCurrentRow(qTable[randomIndex])
     setShowResults(false)
+    setSelectedTile(null)
   }
 
   if (loading || !currentRow) return <div>Loading...</div>
@@ -101,7 +103,10 @@ function App() {
               key={`${i}-${copyIndex}`}
               id={`${i + 1}m`}
               size="60px"
-              onClick={() => setShowResults(true)}
+              onClick={() => {
+                setSelectedTile(i)
+                setShowResults(true)
+              }}
             />
           ))
         )}
@@ -125,12 +130,28 @@ function App() {
                 const actionValue = currentRow[`action_${i}` as keyof QRow]
                 if (actionValue < -50) return null
 
+                const isSelected = i === selectedTile
+
                 return (
-                  <tr key={i}>
-                    <td>
+                  <tr
+                    key={i}
+                    style={{
+                      backgroundColor: isSelected ? '#9aa8c6' : 'transparent',
+                      transition: 'background-color 0.3s ease',
+                    }}
+                  >
+                    <td
+                      style={{ padding: '8px', borderBottom: '1px solid #eee' }}
+                    >
                       <Tile id={`${i + 1}m`} size="45px" />
                     </td>
-                    <td style={{ fontWeight: 'bold' }}>
+                    <td
+                      style={{
+                        fontWeight: 'bold',
+                        padding: '8px',
+                        borderBottom: '1px solid #eee',
+                      }}
+                    >
                       {(10 - actionValue).toFixed(2)}
                     </td>
                   </tr>
