@@ -208,7 +208,7 @@ function App() {
                       borderBottom: '1px solid #eee',
                     }}
                   >
-                    {(10 - actionValue).toFixed(2)}
+                    {(11 - actionValue).toFixed(2)}
                   </td>
                 </tr>
               )
