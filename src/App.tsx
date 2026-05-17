@@ -15,6 +15,8 @@ function App() {
     incorrect: 0,
     totalEvLoss: 0,
   })
+  const [inputVector, setInputVector] = useState('')
+  const [inputError, setInputError] = useState('')
 
   useEffect(() => {
     fetch('q_values.json')
@@ -41,6 +43,35 @@ function App() {
     setCurrentRow(qTable[randomIndex])
     setShowResults(false)
     setSelectedTile(null)
+  }
+
+  const handleLoadVector = () => {
+    if (inputVector.length !== 9) {
+      setInputError('Vector must be exactly 9 digits.')
+      return
+    }
+
+    const vector = inputVector.split('').map(Number)
+
+    if (vector.some((count) => count > 4)) {
+      setInputError('Individual tile counts cannot exceed 4.')
+      return
+    }
+
+    const targetState = vector.reduce(
+      (acc, count, i) => acc + count * Math.pow(5, i),
+      0
+    )
+    const foundRow = qTable.find((row) => row.state === targetState)
+
+    if (foundRow) {
+      setCurrentRow(foundRow)
+      setShowResults(false)
+      setSelectedTile(null)
+      setInputError('')
+    } else {
+      setInputError('This specific hand/state does not exist in the Q-table.')
+    }
   }
 
   const handleTileClick = (index: number) => {
@@ -120,22 +151,90 @@ function App() {
         </div>
       </div>
 
-      <button
-        onClick={pickRandomValidHand}
+      <div
         style={{
-          padding: '12px 24px',
-          backgroundColor: '#007bff',
-          color: 'white',
-          border: 'none',
-          borderRadius: '6px',
-          cursor: 'pointer',
+          display: 'flex',
+          gap: '20px',
+          alignItems: 'flex-start',
           marginBottom: '30px',
-          fontSize: '16px',
-          fontWeight: 'bold',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
         }}
       >
-        New Hand
-      </button>
+        <button
+          onClick={pickRandomValidHand}
+          style={{
+            padding: '12px 24px',
+            backgroundColor: '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            height: '46px',
+          }}
+        >
+          New Hand
+        </button>
+
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+          }}
+        >
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              type="text"
+              placeholder="e.g. 021320042"
+              maxLength={9}
+              value={inputVector}
+              onChange={(e) =>
+                setInputVector(e.target.value.replace(/\D/g, ''))
+              }
+              style={{
+                padding: '10px',
+                borderRadius: '6px',
+                border: '1px solid #ccc',
+                fontSize: '16px',
+                width: '140px',
+                height: '46px',
+                boxSizing: 'border-box',
+              }}
+            />
+            <button
+              onClick={handleLoadVector}
+              style={{
+                padding: '0 16px',
+                backgroundColor: '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '15px',
+                fontWeight: 'bold',
+                height: '46px',
+              }}
+            >
+              Load Hand
+            </button>
+          </div>
+          {inputError && (
+            <span
+              style={{
+                color: '#dc3545',
+                fontSize: '13px',
+                marginTop: '6px',
+                fontWeight: '500',
+              }}
+            >
+              {inputError}
+            </span>
+          )}
+        </div>
+      </div>
 
       <div style={{ marginBottom: '20px', fontSize: '14px', color: '#666' }}>
         <strong>State ID:</strong> {currentRow.state} | <strong>Counts:</strong>{' '}
@@ -151,7 +250,7 @@ function App() {
           background: '#2c3e50',
           borderRadius: '12px',
           minHeight: '120px',
-          maxWidth: '600px',
+          maxWidth: '1000px',
           width: '100%',
           alignItems: 'center',
           marginBottom: '40px',
@@ -208,7 +307,7 @@ function App() {
                       borderBottom: '1px solid #eee',
                     }}
                   >
-                    {(11 - actionValue).toFixed(2)}
+                    {(11 - actionValue).toFixed(6)}
                   </td>
                 </tr>
               )
