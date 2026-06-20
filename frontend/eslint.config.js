@@ -18,6 +18,12 @@ export default defineConfig([
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+      parser: tsParser,
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'], // or ['./tsconfig.json']
+        // This tells ESLint to always use the directory of this config file as the root
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
   },
 ])
